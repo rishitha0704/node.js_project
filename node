@@ -1,0 +1,36 @@
+const express = require('express');
+const { Pool } = require('pg');
+
+const app = express();
+const port = 3000;
+
+// Replace with your PostgreSQL connection details
+const pool = new Pool({
+    user: 'your_username',
+    host: 'your_host',
+    database: 'your_database',
+    password: 'your_password',
+    port: 5432,
+});
+
+app.use(express.json());
+
+app.post('/register', async (req, res) => {
+    const { name, street, city, state, country } = req.body;
+
+    try {
+        const userRes = await pool.query('INSERT INTO users (name) VALUES ($1) RETURNING id', [name]);
+        const userId = userRes.rows[0].id;
+
+        const addressRes = await pool.query('INSERT INTO addresses (street, city, state, country, user_id) VALUES ($1, $2, $3, $4, $5)', [street, city, state, country, userId]);
+
+        res.json({ message: 'User and address registered successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'An error occurred' });
+    }
+});
+
+app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+});
